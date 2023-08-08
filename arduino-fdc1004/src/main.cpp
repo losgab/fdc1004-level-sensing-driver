@@ -3,14 +3,11 @@
 
 #define UPPER_BOUND 0X4000 // max readout capacitance
 #define LOWER_BOUND (-1 * UPPER_BOUND)
-#define CHANNEL0 1	  // channel to be read
-#define CHANNEL1 2	  // channel to be read
-#define MEASURMENT0 1 // measurment channel
-#define MEASURMENT1 2 // measurment channel
-#define MEASURMENT2 2 // measurment channel
+#define REF_CHANNEL 0 // measurment channel
+#define LEVEL_CHANNEL 1 // measurment channel
+// #define MEASURMENT2 2 // measurment channel
 
 int capdac0, capdac1 = 0;
-char result[100];
 
 FDC1004 FDC;
 
@@ -18,20 +15,21 @@ void setup()
 {
 	Wire.begin();		  // i2c begin
 	Serial.begin(115200); // serial baud rate
+	FDC.configureMeasurementSingle(REF_CHANNEL, REF_CHANNEL, capdac0);
+	FDC.configureMeasurementSingle(LEVEL_CHANNEL, LEVEL_CHANNEL, capdac1);
 	// FDC.configureMeasurementSingle(MEASURMENT2, CHANNEL, capdac);
 }
 
 void loop()
 {
-	FDC.configureMeasurementSingle(MEASURMENT0, CHANNEL0, capdac0);
-	FDC.triggerSingleMeasurement(MEASURMENT0, FDC1004_400HZ);
+	FDC.triggerSingleMeasurement(REF_CHANNEL, FDC1004_400HZ);
 
 	// wait for completion
 	delay(15);
-	uint16_t value0[2];
-	if (!FDC.readMeasurement(MEASURMENT0, value0))
+	uint16_t ref_value[2];
+	if (!FDC.readMeasurement(REF_CHANNEL, ref_value))
 	{
-		int16_t msb = (int16_t)value0[0];
+		int16_t msb = (int16_t)ref_value[0];
 		int32_t capacitance = ((int32_t)457) * ((int32_t)msb); // in attofarads
 		capacitance /= 1000;								   // in femtofarads
 		capacitance += ((int32_t)3028) * ((int32_t)capdac0);
@@ -50,13 +48,14 @@ void loop()
 		Serial.print((((float)capacitance / 1000)), 2);
 		Serial.println("  pf");
 	}
-	uint16_t value1[2];
-	FDC.configureMeasurementSingle(MEASURMENT1, CHANNEL1, capdac1);
-	FDC.triggerSingleMeasurement(MEASURMENT1, FDC1004_400HZ);
+
+
+	uint16_t level_value[2];
+	FDC.triggerSingleMeasurement(LEVEL_CHANNEL, FDC1004_400HZ);
 	delay(15);
-	if (!FDC.readMeasurement(MEASURMENT1, value1))
+	if (!FDC.readMeasurement(LEVEL_CHANNEL, level_value))
 	{
-		int16_t msb = (int16_t)value1[0];
+		int16_t msb = (int16_t)level_value[0];
 		int32_t capacitance = ((int32_t)457) * ((int32_t)msb); // in attofarads
 		capacitance /= 1000;								   // in femtofarads
 		capacitance += ((int32_t)3028) * ((int32_t)capdac1);
