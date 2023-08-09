@@ -1,78 +1,52 @@
 #include <Arduino.h>
 #include <Protocentral_FDC1004.h>
+// #include <I2CScanner.h>
+#include "capSensor3.hpp"
 
-#define UPPER_BOUND 0X4000 // max readout capacitance
-#define LOWER_BOUND (-1 * UPPER_BOUND)
-#define REF_CHANNEL 0 // measurment channel
+// I2CScanner scanner;
+
+#define REF_CHANNEL 0	// measurment channel
 #define LEVEL_CHANNEL 1 // measurment channel
-// #define MEASURMENT2 2 // measurment channel
+#define ENV_CHANNEL 2	// measurment channel
 
-int capdac0, capdac1 = 0;
+int capdac0, capdac1, capdac2 = 0;
 
 FDC1004 FDC;
 
 void setup()
 {
-	Wire.begin();		  // i2c begin
-	Serial.begin(115200); // serial baud rate
-	FDC.configureMeasurementSingle(REF_CHANNEL, REF_CHANNEL, capdac0);
-	FDC.configureMeasurementSingle(LEVEL_CHANNEL, LEVEL_CHANNEL, capdac1);
-	// FDC.configureMeasurementSingle(MEASURMENT2, CHANNEL, capdac);
+	Wire.begin();		// i2c begin
+	Serial.begin(9600); // serial baud rate
+	// scanner.Init();
+	// delay(200);
+	// scanner.Scan();
+	// delay(200);
 }
 
 void loop()
 {
-	FDC.triggerSingleMeasurement(REF_CHANNEL, FDC1004_400HZ);
+	// testLoop();
+	measure(FDC, REF_CHANNEL, FDC1004_400HZ, &capdac0);
+	float ref_val = getMeasurement(FDC, REF_CHANNEL, &capdac0);
 
-	// wait for completion
-	delay(15);
-	uint16_t ref_value[2];
-	if (!FDC.readMeasurement(REF_CHANNEL, ref_value))
-	{
-		int16_t msb = (int16_t)ref_value[0];
-		int32_t capacitance = ((int32_t)457) * ((int32_t)msb); // in attofarads
-		capacitance /= 1000;								   // in femtofarads
-		capacitance += ((int32_t)3028) * ((int32_t)capdac0);
+	measure(FDC, LEVEL_CHANNEL, FDC1004_400HZ, &capdac1);
+	float lev_val = getMeasurement(FDC, LEVEL_CHANNEL, &capdac1);
 
-		if (msb > UPPER_BOUND) // adjust capdac accordingly
-		{
-			if (capdac0 < FDC1004_CAPDAC_MAX)
-				capdac0++;
-		}
-		else if (msb < LOWER_BOUND)
-		{
-			if (capdac0 > 0)
-				capdac0--;
-		}
-		Serial.print("Ref Sensor: ");
-		Serial.print((((float)capacitance / 1000)), 2);
-		Serial.println("  pf");
-	}
+	measure(FDC, ENV_CHANNEL, FDC1004_400HZ, &capdac2);
+	float env_val = getMeasurement(FDC, ENV_CHANNEL, &capdac2);
 
+	Serial.print("Ref Sensor: ");
+	Serial.print(ref_val, 2);
+	Serial.println("  pf");
+	Serial.print("Level Sensor: ");
+	Serial.print(lev_val, 2);
+	Serial.println("  pf");
+	Serial.print("Env Sensor: ");
+	Serial.print(env_val, 2);
+	Serial.println("  pf");
 
-	uint16_t level_value[2];
-	FDC.triggerSingleMeasurement(LEVEL_CHANNEL, FDC1004_400HZ);
-	delay(15);
-	if (!FDC.readMeasurement(LEVEL_CHANNEL, level_value))
-	{
-		int16_t msb = (int16_t)level_value[0];
-		int32_t capacitance = ((int32_t)457) * ((int32_t)msb); // in attofarads
-		capacitance /= 1000;								   // in femtofarads
-		capacitance += ((int32_t)3028) * ((int32_t)capdac1);
-
-		if (msb > UPPER_BOUND) // adjust capdac accordingly
-		{
-			if (capdac1 < FDC1004_CAPDAC_MAX)
-				capdac1++;
-		}
-		else if (msb < LOWER_BOUND)
-		{
-			if (capdac1 > 0)
-				capdac1--;
-		}
-		Serial.print("Level Sensor: ");
-		Serial.print((((float)capacitance / 1000)), 2);
-		Serial.println("  pf");
-	}
+	Serial.println("--------------");
+	// calculateLevel(ref_val, level_val, env_val / 4);
+	Serial.println("--------------");
 	delay(500);
 }
