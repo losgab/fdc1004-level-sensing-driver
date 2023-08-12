@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "i2c_handler.h": "c",
+        "i2c.h": "c"
+    }
+}
