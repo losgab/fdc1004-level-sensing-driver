@@ -9,6 +9,8 @@
 #define I2C_MASTER_NUM I2C_NUM_0
 #define I2C_MASTER_FREQ_HZ 100000 // I2C master clock frequency
 
+#define SYS_DELAY(x) vTaskDelay(pdMS_TO_TICKS(x))
+
 void app_main()
 {
     i2c_master_init(I2C_MASTER_NUM);
@@ -17,6 +19,7 @@ void app_main()
     {
         // update the sensor
         // get readings from internally stored stuff
-        vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1000 milliseconds
+        // vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1000 milliseconds
+        SYS_DELAY(1000);
     }
 }
