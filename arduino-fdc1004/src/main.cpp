@@ -37,15 +37,19 @@ void loop()
 
 	Serial.println("----------");
 	Serial.print("R: ");
-	Serial.println(ref_val, 2);
+	Serial.println(ref_val, 1);
 	// Serial.println("  pf");
 	Serial.print("L: ");
-	Serial.println(lev_val, 2);
+	Serial.println(lev_val, 1);
 	// Serial.println("  pf");
 	Serial.print("E: ");
-	Serial.println(env_val, 2);
+	Serial.println(env_val, 1);
 	// Serial.println("  pf");
 	Serial.println("----------");
+	float level = calculateLevel(ref_val, lev_val, env_val);
+	Serial.print("O: ");
+	Serial.println(level, 1);
+	Serial.println("----------");
 
-	delay(500);
+	delay(200);
 }

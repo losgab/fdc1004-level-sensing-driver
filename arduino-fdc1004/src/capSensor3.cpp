@@ -37,19 +37,29 @@ float getMeasurement(FDC1004 fdc, uint8_t channel, int *capdac_addr)
 
 float calculateLevel(float ref_val, float level_val, float env_val)
 {
-    if (level_val <= LEVEL_ZERO && ref_val > REF_ZERO)
+    if (ref_val < REF_MAX)
     {
-        return ref_val / REF_ZERO;
+        Serial.println("Calibrating...");
+        float level = (REF_ZERO - ref_val / REF_ZERO);
+        return round(level / 5) * 5;
     }
     else if (level_val > LEVEL_ZERO)
     {
-        return level_val * LEVEL_GAIN + LEVEL_OFFSET;
+        Serial.println("Corrected Levelling...");
+        // float level = LEVEL_TRANSFORM_M * level_val + LEVEL_TRANSFORM_B;
+        // return double(map(level_val, LEVEL_ZERO, LEVEL_MAX, 1, 10));
+        // return LEVEL_TRANSFORM_M * level_val + LEVEL_TRANSFORM_B;
+        // return REF_HEIGHT * (ref_val - REF_ZERO) * (level_val - LEVEL_ZERO);
+        float level = INVERSE_M * level_val + INVERSE_B;
+        return round(level / 5) * 5;
     }
     else return 0;
         // float raw_level = REF_HEIGHT * ((level_val - LEVEL_ZERO) / (ref_val - env_val));
         // return raw_level * LEVEL_GAIN + LEVEL_OFFSET;
         
     // float level = ((level_val - LEVEL_ZERO) / (ref_val - (env_val / 4)));
+    // return LEVEL_TRANSFORM_M * 
+
 }
 
 void testLoop()

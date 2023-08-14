@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#define WINDOW_SIZE 20
+#define WINDOW_SIZE 30
 
 class CircularQueue
 {
