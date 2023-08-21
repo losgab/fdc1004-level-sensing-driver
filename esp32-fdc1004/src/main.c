@@ -16,17 +16,11 @@ void app_main()
 {
     pin_setup();
     i2c_master_init(I2C_MASTER_NUM);
-
+    uint8_t hello;
     while (1)
     {
         // update the sensor
         // get readings from internally stored stuff
         SYS_DELAY(1000);
     }
-}
-
-void pin_setup()
-{
-    gpio_set_direction(GPIO_NUM_0, GPIO_MODE_INPUT_OUTPUT);
-    gpio_set_pull_mode(GPIO_NUM_0, GPIO_PULLUP_ONLY);
 }
