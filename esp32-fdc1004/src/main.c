@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "driver/gpio.h"
 
 #include "i2c_handler.h"
 
@@ -13,13 +14,19 @@
 
 void app_main()
 {
+    pin_setup();
     i2c_master_init(I2C_MASTER_NUM);
 
     while (1)
     {
         // update the sensor
         // get readings from internally stored stuff
-        // vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1000 milliseconds
         SYS_DELAY(1000);
     }
+}
+
+void pin_setup()
+{
+    gpio_set_direction(GPIO_NUM_0, GPIO_MODE_INPUT_OUTPUT);
+    gpio_set_pull_mode(GPIO_NUM_0, GPIO_PULLUP_ONLY);
 }
