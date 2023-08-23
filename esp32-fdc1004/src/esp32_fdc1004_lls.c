@@ -47,9 +47,34 @@ esp_err_t lls_init(uint8_t i2c_master_channel, uint8_t rate)
 }
 
 /*
-
+    Configures a channel for a measurement
 */
-esp_err_t configure_single_measurement(fdc1004_channel *channel_obj, uint8_t capdac)
+esp_err_t configure_single_measurement(fdc1004_channel *channel_obj)
 {
-    
+    if (!FDC1004_IS_CHANNEL(channel_obj->channel))
+        return ESP_ERR_INVALID_ARG;
+
+    // Build 16 bit configuration
+    uint16_t configuration = 0;
+    configuration = (uint16_t)(channel_obj->channel) << 13; // CHA
+    configuration |= ((uint16_t)0x04) << 10;                // CHB disable * CAPDAC enable
+    configuration |= (uint16_t)(channel_obj->capdac) << 5;  // Capdac Value
+    write16(channel_obj->address, configuration);
+    return ESP_OK;
+}
+
+/*
+    Triggers measurement for a channel
+*/
+esp_err_t trigger_single_measurement(fdc1004_channel *channel_obj)
+{
+    if (!FDC1004_IS_CHANNEL(channel_obj->channel) || !FDC1004_IS_RATE(channel_obj->rate))
+        return ESP_ERR_INVALID_ARG;
+
+    uint16_t configuration = 0;
+    configuration = (uint16_t)(channel_obj->channel) << 13; // CHA
+    configuration |= ((uint16_t)0x04) << 10;                // CHB disable * CAPDAC enable
+    configuration |= (uint16_t)(channel_obj->capdac) << 5;  // Capdac Value
+    write16(channel_obj->address, configuration);
+    return ESP_OK;
 }

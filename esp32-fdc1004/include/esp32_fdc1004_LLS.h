@@ -29,8 +29,11 @@
 // Measurement Output
 typedef struct fdc1004_channel
 {
-    int16_t value;
+    uint8_t channel;
+    uint8_t address;
     uint8_t capdac;
+    uint8_t rate;
+    int16_t value;
 } fdc1004_channel;
 
 // Configuration Data
@@ -45,10 +48,10 @@ lls_config_t config;
 /*
     Public Functions
 */
-esp_err_t lls_init(uint8_t i2c_master_channel, uint8_t rate);
-esp_err_t configure_single_measurement(uint8_t channel, uint8_t capdac);
-uint8_t trigger_single_measurement(uint8_t channel, uint8_t rate);
-uint8_t readMeasurement(uint8_t channel);
+esp_err_t lls_init(uint8_t, uint8_t);
+esp_err_t configure_single_measurement(fdc1004_channel *);
+esp_err_t trigger_single_measurement(uint8_t channel, uint8_t rate);
+esp_err_t readMeasurement(uint8_t channel);
 
 /*
     Internal Functions
