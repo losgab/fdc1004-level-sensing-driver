@@ -4,7 +4,7 @@
     
     Author: Gabriel Thien
     
-    Based on original code written by Ashwin Whitchurch, Protocentral for Arduino framework
+    Based on code written by Ashwin Whitchurch (Protocentral) for Arduino framework
 */
 
 #include <driver/i2c.h>
@@ -19,6 +19,9 @@
 #define FDC1004_CHANNEL_MAX (0x03)
 #define FDC1004_IS_CHANNEL(x) (0 <= x && x <= FDC1004_CHANNEL_MAX)
 
+#define FDC1004_IS_MSB_ADDRESS(a) (a % 2 == 0 && 0x00 <= a && a <= 0x06)
+#define FDC1004_IS_LSB_ADDRESS(a) (a % 2 == 1 && 0x01 <= a && a <= 0x07)
+
 #define FDC_REGISTER (0x0C)
 
 #define ATTOFARADS_UPPER_WORD (457) //number of attofarads for each 8th most lsb (lsb of the upper 16 bit half-word)
@@ -30,7 +33,9 @@
 typedef struct fdc1004_channel
 {
     uint8_t channel;
-    uint8_t address;
+    uint8_t msb_address;
+    uint8_t lsb_address;
+    uint8_t config_address;
     uint8_t capdac;
     uint8_t rate;
     int16_t value;
@@ -50,13 +55,13 @@ lls_config_t config;
 */
 esp_err_t lls_init(uint8_t, uint8_t);
 esp_err_t configure_single_measurement(fdc1004_channel *);
-esp_err_t trigger_single_measurement(uint8_t channel, uint8_t rate);
-esp_err_t readMeasurement(uint8_t channel);
+esp_err_t trigger_single_measurement(fdc1004_channel *);
+esp_err_t update_measurement(fdc1004_channel *);
 
 /*
     Internal Functions
 */
 void write16(uint8_t reg, uint16_t data);
-uint16_t read16(uint8_t reg);
+uint8_t read8(uint8_t reg);
 
 

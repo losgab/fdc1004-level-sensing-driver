@@ -16,7 +16,6 @@ void app_main()
 {
     pin_setup();
     i2c_master_init(I2C_MASTER_NUM);
-    uint8_t hello;
     while (1)
     {
         // update the sensor
