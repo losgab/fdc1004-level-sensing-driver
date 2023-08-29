@@ -2,6 +2,10 @@
     "files.associations": {
         "i2c_handler.h": "c",
         "i2c.h": "c",
-        "gpio.h": "c"
+        "gpio.h": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "random": "cpp"
     }
 }

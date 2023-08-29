@@ -14,8 +14,7 @@
 
 void app_main()
 {
-    pin_setup();
-    i2c_master_init(I2C_MASTER_NUM);
+    i2c_master_init(I2C_MASTER_NUM, I2C_MASTER_SDA_PIN, I2C_MASTER_SCL_PIN);
     while (1)
     {
         // update the sensor
