@@ -8,6 +8,7 @@
 */
 
 #include <driver/i2c.h>
+#include "i2c_handler.h"
 
 #define FDC_SLAVE_ADDRESS 0b1010000
 
@@ -47,7 +48,7 @@ typedef struct fdc1004_channel
 /*
     Validates struct data for FDC guidelines
 */
-esp_err_t is_valid_channel_obj(fdc1004_channel *channel_obj);
+esp_err_t validate_channel_obj(fdc1004_channel *channel_obj);
 
 /*
     Configures a channel for measurement
@@ -62,6 +63,6 @@ esp_err_t update_measurement(fdc1004_channel *channel_obj);
 /*
     Reads the byte currently stored inside the specified register
 */
-uint8_t read8(i2c_port_t i2c_port_num, uint8_t reg_address);
+uint8_t read_byte(i2c_port_t i2c_port_num, uint8_t reg_address);
 
 

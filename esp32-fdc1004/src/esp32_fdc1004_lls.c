@@ -1,7 +1,7 @@
 #include "esp32_fdc1004_lls.h"
 
 
-esp_err_t is_valid_channel_obj(fdc1004_channel *channel_obj)
+esp_err_t validate_channel_obj(fdc1004_channel *channel_obj)
 {
     if (!IS_I2C_PORT(channel_obj->i2c_port_num))
         return ESP_ERR_INVALID_ARG;
@@ -51,7 +51,7 @@ uint8_t read_byte(i2c_port_t i2c_port_num, uint8_t reg_address)
 esp_err_t configure_single_measurement(fdc1004_channel *channel_obj)
 {
     // Validation
-    if (!is_valid_channel_obj(channel_obj))
+    if (validate_channel_obj(channel_obj))
         return ESP_ERR_INVALID_ARG;
 
     // Build 16 bit configuration
@@ -66,7 +66,7 @@ esp_err_t configure_single_measurement(fdc1004_channel *channel_obj)
 esp_err_t update_measurement(fdc1004_channel *channel_obj)
 {
     // Validation
-    if (!is_valid_channel_obj(channel_obj))
+    if (validate_channel_obj(channel_obj))
         return ESP_ERR_INVALID_ARG;
 
     // Build & trigger a measurement
