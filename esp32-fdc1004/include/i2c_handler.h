@@ -11,6 +11,11 @@
 esp_err_t i2c_master_init(i2c_port_t i2c_master_channel, gpio_num_t sda_pin, gpio_num_t scl_pin);
 
 /*
-    Send data to an address
+    Send a byte on the I2C line
 */
-esp_err_t write_n_bytes(i2c_port_t i2c_port_num, uint8_t target_address, void *data, uint8_t data_len);
+esp_err_t write_byte(i2c_port_t i2c_port_num, uint8_t byte);
+
+/*
+    Send n bytes data to an address
+*/
+esp_err_t write_n_bytes(i2c_port_t i2c_port_num, void *data, uint8_t data_len);

@@ -21,13 +21,24 @@ esp_err_t i2c_master_init(i2c_port_t i2c_master_channel, gpio_num_t sda_pin, gpi
     return ESP_OK;
 }
 
-esp_err_t write_n_bytes(i2c_port_t i2c_port_num, uint8_t target_address, void *data, uint8_t data_len)
+esp_err_t write_byte(i2c_port_t i2c_port_num, uint8_t byte)
 {
     void *link = i2c_cmd_link_create();
     i2c_master_start(&link);
 
     // Sends slave address with write command
-    i2c_master_write_byte(&link, (target_address << 1) | I2C_MASTER_WRITE, true);
+    i2c_master_write_byte(&link, byte, true);
+
+    i2c_master_stop(&link);
+    i2c_master_cmd_begin(i2c_port_num, &link, 100);
+    i2c_cmd_link_delete(&link);
+    return ESP_OK;
+}
+
+esp_err_t write_n_bytes(i2c_port_t i2c_port_num, void *data, uint8_t data_len)
+{
+    void *link = i2c_cmd_link_create();
+    i2c_master_start(&link);
 
     // Sends data of specificed length
     i2c_master_write(&link, (uint8_t *)data, data_len, true);

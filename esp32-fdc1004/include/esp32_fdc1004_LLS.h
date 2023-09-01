@@ -32,6 +32,13 @@
 #define ATTOFARADS_UPPER_WORD (457) //number of attofarads for each 8th most lsb (lsb of the upper 16 bit half-word)
 #define FEMTOFARADS_CAPDAC (3028) //number of femtofarads for each lsb of the capdac
 
+#define FDC1004_UPPER_BOUND ((int16_t) 0x4000)
+#define FDC1004_LOWER_BOUND (-1 * FDC1004_UPPER_BOUND)
+
+const uint8_t config[] = {0x08, 0x09, 0x0A, 0x0B};
+const uint8_t msb[] = {0x00, 0x02, 0x04, 0x06};
+const uint8_t lsb[] = {0x01, 0x03, 0x05, 0x07};
+
 // Measurement Output
 typedef struct fdc1004_channel
 {
@@ -41,14 +48,26 @@ typedef struct fdc1004_channel
     uint8_t config_address;
     uint8_t msb_address;
     uint8_t lsb_address;
-    uint8_t capdac;
-    uint16_t value;
+    uint8_t raw_msb;
+    uint8_t raw_lsb;
+    int capdac;
+    int16_t value;
 } fdc1004_channel;
+
+/*
+    Creates a channel struct for keeping track of measurements
+*/
+esp_err_t init_channel(fdc1004_channel *channel_obj, i2c_port_t i2c_port_num, uint8_t channel, uint8_t rate);
 
 /*
     Validates struct data for FDC guidelines
 */
 esp_err_t validate_channel_obj(fdc1004_channel *channel_obj);
+
+/*
+    Reads the byte currently stored inside the specified register
+*/
+uint8_t read_register(i2c_port_t i2c_port_num, uint8_t reg_address);
 
 /*
     Configures a channel for measurement
@@ -61,8 +80,6 @@ esp_err_t configure_single_measurement(fdc1004_channel *channel_obj);
 esp_err_t update_measurement(fdc1004_channel *channel_obj);
 
 /*
-    Reads the byte currently stored inside the specified register
+    Update channel capdac
 */
-uint8_t read_byte(i2c_port_t i2c_port_num, uint8_t reg_address);
-
-
+esp_err_t update_capdac(fdc1004_channel *channel_obj);
