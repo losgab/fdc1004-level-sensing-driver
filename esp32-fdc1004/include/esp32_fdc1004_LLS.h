@@ -52,17 +52,19 @@ typedef struct fdc1004_channel
     uint8_t raw_lsb;
     int capdac;
     int16_t value;
-} fdc1004_channel;
+} fdc1004_channel_obj;
+
+typedef fdc1004_channel_obj* fdc_channel_t;
 
 /*
     Creates a channel struct for keeping track of measurements
 */
-esp_err_t init_channel(fdc1004_channel *channel_obj, i2c_port_t i2c_port_num, uint8_t channel, uint8_t rate);
+esp_err_t init_channel(fdc_channel_t channel_obj, i2c_port_t i2c_port_num, uint8_t channel, uint8_t rate);
 
 /*
     Validates struct data for FDC guidelines
 */
-esp_err_t validate_channel_obj(fdc1004_channel *channel_obj);
+esp_err_t validate_channel_obj(fdc_channel_t channel_obj);
 
 /*
     Reads the byte currently stored inside the specified register
@@ -72,14 +74,14 @@ uint8_t read_register(i2c_port_t i2c_port_num, uint8_t reg_address);
 /*
     Configures a channel for measurement
 */
-esp_err_t configure_single_measurement(fdc1004_channel *channel_obj);
+esp_err_t configure_single_measurement(fdc_channel_t channel_obj);
 
 /*
     Triggers, Reads & Updates measurement
 */
-esp_err_t update_measurement(fdc1004_channel *channel_obj);
+esp_err_t update_measurement(fdc_channel_t channel_obj);
 
 /*
     Update channel capdac
 */
-esp_err_t update_capdac(fdc1004_channel *channel_obj);
+esp_err_t update_capdac(fdc_channel_t channel_obj);

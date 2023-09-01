@@ -1,6 +1,6 @@
 #include "esp32_fdc1004_lls.h"
 
-esp_err_t init_channel(fdc1004_channel *new_channel, i2c_port_t i2c_port_num, uint8_t channel, uint8_t rate)
+esp_err_t init_channel(fdc_channel_t new_channel, i2c_port_t i2c_port_num, uint8_t channel, uint8_t rate)
 {
     if (!IS_I2C_PORT(i2c_port_num))
         return ESP_ERR_INVALID_ARG;
@@ -11,7 +11,7 @@ esp_err_t init_channel(fdc1004_channel *new_channel, i2c_port_t i2c_port_num, ui
     if (!FDC1004_IS_RATE(rate))
         return ESP_ERR_INVALID_ARG;
 
-    new_channel = malloc(sizeof(fdc1004_channel));
+    new_channel = malloc(sizeof(fdc1004_channel_obj));
 
     // Checks for failed memory allocation
     if (new_channel == NULL)
@@ -32,7 +32,7 @@ esp_err_t init_channel(fdc1004_channel *new_channel, i2c_port_t i2c_port_num, ui
     return ESP_OK;
 }
 
-esp_err_t validate_channel_obj(fdc1004_channel *channel_obj)
+esp_err_t validate_channel_obj(fdc_channel_t channel_obj)
 {
     if (!IS_I2C_PORT(channel_obj->i2c_port_num))
         return ESP_ERR_INVALID_ARG;
@@ -79,7 +79,7 @@ uint8_t read_register(i2c_port_t i2c_port_num, uint8_t reg_address)
     return data;
 }
 
-esp_err_t configure_single_measurement(fdc1004_channel *channel_obj)
+esp_err_t configure_single_measurement(fdc_channel_t channel_obj)
 {
     // Validation
     if (validate_channel_obj(channel_obj))
@@ -99,13 +99,13 @@ esp_err_t configure_single_measurement(fdc1004_channel *channel_obj)
     return ESP_OK;
 }
 
-esp_err_t update_measurement(fdc1004_channel *channel_obj)
+esp_err_t update_measurement(fdc_channel_t channel_obj)
 {
     // Validation
     if (validate_channel_obj(channel_obj))
         return ESP_ERR_INVALID_ARG;
 
-    // Build measurement
+    // Build trigger
     uint16_t trigger = 0;
     trigger = (uint16_t)(channel_obj->rate) << 10; // Sample Rate
     trigger |= 0 << 8;                             // Disable repeat
@@ -139,7 +139,7 @@ esp_err_t update_measurement(fdc1004_channel *channel_obj)
     return ESP_OK;
 }
 
-esp_err_t update_capdac(fdc1004_channel *channel_obj)
+esp_err_t update_capdac(fdc_channel_t channel_obj)
 {
     if ((int16_t)(channel_obj->raw_msb) > FDC1004_UPPER_BOUND) // adjust capdac accordingly
     {
