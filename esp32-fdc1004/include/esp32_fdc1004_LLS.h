@@ -7,7 +7,6 @@
     Based on code written by Ashwin Whitchurch (Protocentral) for Arduino framework
 */
 
-#include <driver/i2c.h>
 #include "i2c_handler.h"
 
 #define FDC_SLAVE_ADDRESS 0b1010000
@@ -20,7 +19,7 @@
 #define FDC1004_CAPDAC_MAX (0x1F)
 
 #define FDC1004_CHANNEL_MAX (0x03)
-#define FDC1004_IS_CHANNEL(x) (0 <= x && x <= FDC1004_CHANNEL_MAX)
+#define FDC1004_IS_CHANNEL(x) (x <= FDC1004_CHANNEL_MAX)
 
 #define FDC1004_IS_CONFIG_ADDRESS(a) (0x08 <= a && a <= 0x0B)
 
@@ -35,9 +34,9 @@
 #define FDC1004_UPPER_BOUND ((int16_t) 0x4000)
 #define FDC1004_LOWER_BOUND (-1 * FDC1004_UPPER_BOUND)
 
-const uint8_t config[] = {0x08, 0x09, 0x0A, 0x0B};
-const uint8_t msb[] = {0x00, 0x02, 0x04, 0x06};
-const uint8_t lsb[] = {0x01, 0x03, 0x05, 0x07};
+static const uint8_t config[] = {0x08, 0x09, 0x0A, 0x0B};
+static const uint8_t msb_addresses[] = {0x00, 0x02, 0x04, 0x06};
+static const uint8_t lsb_addresses[] = {0x01, 0x03, 0x05, 0x07};
 
 // Measurement Output
 typedef struct fdc1004_channel
@@ -48,26 +47,36 @@ typedef struct fdc1004_channel
     uint8_t config_address;
     uint8_t msb_address;
     uint8_t lsb_address;
-    uint8_t raw_msb;
-    uint8_t raw_lsb;
+    int raw_msb;
+    int raw_lsb;
     int capdac;
     int16_t value;
-} fdc1004_channel_obj;
+} fdc1004_channel;
 
-typedef fdc1004_channel_obj* fdc_channel_t;
+typedef fdc1004_channel* fdc_channel_t;
 
 /*
     Creates a channel struct for keeping track of measurements
 */
-esp_err_t init_channel(fdc_channel_t channel_obj, i2c_port_t i2c_port_num, uint8_t channel, uint8_t rate);
+fdc_channel_t init_channel(i2c_port_t i2c_port_num, uint8_t channel, uint8_t rate);
+
+/*
+    Deletes and frees memory related to channel object
+*/
+esp_err_t del_channel(fdc_channel_t channel);
 
 /*
     Validates struct data for FDC guidelines
 */
 esp_err_t validate_channel_obj(fdc_channel_t channel_obj);
 
-/*
-    Reads the byte currently stored inside the specified register
+/**
+ * @brief Uses I2C interface to read data at a particular address
+ * 
+ * @param i2c_port_num I2C port number
+ * @param reg_address Address of the register in the FDC1004 to be read
+ * 
+ * @return byte stored at that address
 */
 uint8_t read_register(i2c_port_t i2c_port_num, uint8_t reg_address);
 

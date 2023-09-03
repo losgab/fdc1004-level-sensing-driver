@@ -18,4 +18,4 @@ esp_err_t write_byte(i2c_port_t i2c_port_num, uint8_t byte);
 /*
     Send n bytes data to an address
 */
-esp_err_t write_n_bytes(i2c_port_t i2c_port_num, void *data, uint8_t data_len);
+esp_err_t write_n_bytes(i2c_port_t i2c_port_num, uint8_t *data, uint8_t data_len);

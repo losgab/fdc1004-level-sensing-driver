@@ -6,6 +6,8 @@
         "array": "c",
         "string": "c",
         "string_view": "c",
-        "random": "cpp"
+        "random": "cpp",
+        "esp32_fdc1004_lls.h": "c",
+        "task.h": "c"
     }
 }
