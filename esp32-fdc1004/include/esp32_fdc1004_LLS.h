@@ -7,7 +7,7 @@
     Based on code written by Ashwin Whitchurch (Protocentral) for Arduino framework
 */
 
-#include "i2c_handler.h"
+#include <driver/i2c.h>
 
 #define FDC_SLAVE_ADDRESS 0b1010000
 
@@ -50,23 +50,35 @@ typedef struct fdc1004_channel
     int raw_msb;
     int raw_lsb;
     int capdac;
-    int16_t value;
+    float value;
 } fdc1004_channel;
 
 typedef fdc1004_channel* fdc_channel_t;
 
-/*
-    Creates a channel struct for keeping track of measurements
+/**
+ * @brief Initialises a channel struct for storing all data associated with channel readings
+ * 
+ * @param i2c_port_num I2C port number to initialise the channel on
+ * @param channel Channel number on the FDC1004 to use for readings
+ * @param rate Rate at which measurements are taken on the FDC1004
+ * 
+ * @return Pointer to fdc_channel struct, NULL if failed because out of memory or some other internal error
 */
 fdc_channel_t init_channel(i2c_port_t i2c_port_num, uint8_t channel, uint8_t rate);
 
-/*
-    Deletes and frees memory related to channel object
+/**
+ * @brief Frees associated memory with pointer
+ * 
+ * @param channel_obj Pointer to channel struct
+ * 
+ * @return ESP_OK if all good.
 */
-esp_err_t del_channel(fdc_channel_t channel);
+esp_err_t del_channel(fdc_channel_t channel_obj);
 
-/*
-    Validates struct data for FDC guidelines
+/**
+ * @brief Validates the fields in the channel struct
+ * 
+ * @return ESP_OK if good, ESP_ERR_INVLD_ARG if there is mismatch data
 */
 esp_err_t validate_channel_obj(fdc_channel_t channel_obj);
 
@@ -80,17 +92,29 @@ esp_err_t validate_channel_obj(fdc_channel_t channel_obj);
 */
 uint8_t read_register(i2c_port_t i2c_port_num, uint8_t reg_address);
 
-/*
-    Configures a channel for measurement
+/**
+ * @brief Configures by building and configuring 16 bit configuration for config registers
+ * 
+ * @param channel_obj Pointer to channel struct
+ * 
+ * @return ESP_OK if good, ESP_ERR_INVLD_ARG if there is mismatch data
 */
 esp_err_t configure_single_measurement(fdc_channel_t channel_obj);
 
-/*
-    Triggers, Reads & Updates measurement
+/**
+ * @brief Triggers and updates measurements of the channel struct
+ * 
+ * @param channel_obj Pointer to channel struct
+ * 
+ * @return ESP_OK if good, ESP_ERR_INVLD_ARG if there is mismatch data
 */
 esp_err_t update_measurement(fdc_channel_t channel_obj);
 
-/*
-    Update channel capdac
+/**
+ * @brief Updates the capdac associated to the channel
+ * 
+ * @param channel_obj Pointer to channel struct
+ * 
+ * @return ESP_OK if good, ESP_ERR_INVLD_ARG if there is mismatch data
 */
 esp_err_t update_capdac(fdc_channel_t channel_obj);

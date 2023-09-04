@@ -32,11 +32,11 @@ fdc_channel_t init_channel(i2c_port_t i2c_port_num, uint8_t channel, uint8_t rat
     return new_channel;
 }
 
-esp_err_t del_channel(fdc_channel_t channel)
+esp_err_t del_channel(fdc_channel_t channel_obj)
 {
-    if (channel == NULL)
+    if (channel_obj == NULL)
         return ESP_ERR_INVALID_ARG;
-    free(channel);
+    free(channel_obj);
     return ESP_OK;
 }
 
@@ -63,69 +63,42 @@ esp_err_t validate_channel_obj(fdc_channel_t channel_obj)
 uint8_t read_register(i2c_port_t i2c_port_num, uint8_t reg_address)
 {
     int8_t error;
+    uint8_t data = 0;
 
     // Specify which register to read with pointer byte
-    uint8_t data[1];
-    data[0] = reg_address;
-    error = i2c_master_write_to_device(i2c_port_num, FDC_SLAVE_ADDRESS, data, sizeof(data), pdMS_TO_TICKS(100));
+    error = i2c_master_write_to_device(i2c_port_num, FDC_SLAVE_ADDRESS, &reg_address, sizeof(reg_address), pdMS_TO_TICKS(100));
     if (error != ESP_OK)
         printf("Specify read register failed! %d\n", error);
 
-    // i2c_cmd_handle_t link = i2c_cmd_link_create();
-    // i2c_master_start(link);
-
-    // // Sends slave address
-    // i2c_master_write_byte(link, (FDC_SLAVE_ADDRESS << 1) | I2C_MASTER_WRITE, true);
-
-    // // Sets the register in the pointer register to be read from
-    // i2c_master_write_byte(link, reg_address, true);
-    // i2c_master_stop(link);
-    // i2c_master_cmd_begin(i2c_port_num, link, 100);
-    // i2c_cmd_link_delete(link);
-
     // Sends read command for reading the current value in the register stored in the pointer register
-    error = i2c_master_read_from_device(i2c_port_num, FDC_SLAVE_ADDRESS, data, sizeof(data), pdMS_TO_TICKS(100));
+    error = i2c_master_read_from_device(i2c_port_num, FDC_SLAVE_ADDRESS, &data, sizeof(data), pdMS_TO_TICKS(100));
     if (error != ESP_OK)
         printf("Read byte in register failed! %d\n", error);
 
-    printf("Received: %d\n", data[0]);
-    return data[0];
+    return data;
 }
 
 esp_err_t configure_single_measurement(fdc_channel_t channel_obj)
 {
     int8_t error;
+    uint8_t config[3];
+
     // Validation
     if (validate_channel_obj(channel_obj))
         return ESP_ERR_INVALID_ARG;
 
-    // Write the pointer byte
-    uint8_t config_address[1];
-    config_address[0] = channel_obj->config_address;
-    error = i2c_master_write_to_device(channel_obj->i2c_port_num, FDC_SLAVE_ADDRESS, config_address, sizeof(config_address), pdMS_TO_TICKS(1000));
-    if (error != ESP_OK)
-        printf("Configure slave address failed! %d\n", error);
-
-    // Write on I2C line
-    // write_byte(channel_obj->i2c_port_num, (FDC_SLAVE_ADDRESS << 1) | I2C_MASTER_WRITE);
-    // write_byte(channel_obj->i2c_port_num, channel_obj->config_address);
-    // write_byte(channel_obj->i2c_port_num, (uint8_t)(configuration >> 8));
-    // write_byte(channel_obj->i2c_port_num, (uint8_t)(configuration));
     // Build 16 bit configuration
-
     uint16_t configuration = 0;
     configuration = (uint16_t)(channel_obj->channel) << 13; // CHA
     configuration |= ((uint16_t)0x04) << 10;                // CHB disable * CAPDAC enable
     configuration |= (uint16_t)(channel_obj->capdac) << 5;  // Capdac Value
 
-    uint8_t config[2];
-    config[0] = (uint8_t)(configuration >> 8);
-    config[1] = (uint8_t)(configuration);
-    error = i2c_master_write_to_device(channel_obj->i2c_port_num, FDC_SLAVE_ADDRESS, config, sizeof(config), pdMS_TO_TICKS(10));
+    config[0] = channel_obj->config_address;
+    config[1] = (uint8_t)(configuration >> 8);
+    config[2] = (uint8_t)(configuration);
+    error = i2c_master_write_to_device(channel_obj->i2c_port_num, FDC_SLAVE_ADDRESS, config, sizeof(config), pdMS_TO_TICKS(1000));
     if (error != ESP_OK)
-        printf("Configure slave address failed! %d\n", error);
-
-    // write_n_bytes(channel_obj->i2c_port_num, &(uint8_t)(configuration), sizeof(configuration));
+        printf("Configure measurement failed! %d\n", error);
 
     return ESP_OK;
 }
@@ -133,39 +106,28 @@ esp_err_t configure_single_measurement(fdc_channel_t channel_obj)
 esp_err_t update_measurement(fdc_channel_t channel_obj)
 {
     int8_t error;
+    uint8_t trigger[3];
+
     // Validation
     if (validate_channel_obj(channel_obj))
         return ESP_ERR_INVALID_ARG;
 
     // Build trigger
-    uint16_t trigger = 0;
-    trigger = (uint16_t)(channel_obj->rate) << 10; // Sample Rate
-    trigger |= 0 << 8;                             // Disable repeat
-    trigger |= (1 << (7 - channel_obj->channel));
+    uint16_t trigger_config = 0;
+    trigger_config = (uint16_t)(channel_obj->rate) << 10; // Sample Rate
+    trigger_config |= 0 << 8;                             // Disable repeat
+    trigger_config |= (1 << (7 - channel_obj->channel));
 
-    // Write & trigger measurement
-    uint8_t fdc_register[1];
-    fdc_register[0] = FDC_REGISTER;
-    error = i2c_master_write_to_device(channel_obj->i2c_port_num, FDC_SLAVE_ADDRESS, fdc_register, sizeof(fdc_register), pdMS_TO_TICKS(10));
-    if (error != ESP_OK)
-        printf("Specific FDC_REGISTER failed! %d\n", error);
-    
-    uint8_t trig[2];
-    trig[0] = (uint8_t)(trigger >> 8);
-    trig[1] = (uint8_t)(trigger);
-    error = i2c_master_write_to_device(channel_obj->i2c_port_num, FDC_SLAVE_ADDRESS, trig, sizeof(trig), pdMS_TO_TICKS(10));
+    // Write trigger command
+    trigger[0] = FDC_REGISTER;
+    trigger[1] = (uint8_t)(trigger_config >> 8);
+    trigger[2] = (uint8_t)(trigger_config);
+    error = i2c_master_write_to_device(channel_obj->i2c_port_num, FDC_SLAVE_ADDRESS, trigger, sizeof(trigger), pdMS_TO_TICKS(10));
     if (error != ESP_OK)
         printf("Trigger failed! %d\n", error);
-
-    // write_byte(channel_obj->i2c_port_num, (FDC_SLAVE_ADDRESS << 1) | I2C_MASTER_WRITE);
-    // write_byte(channel_obj->i2c_port_num, FDC_REGISTER);
-    // write_byte(channel_obj->i2c_port_num, (uint8_t)(trigger >> 8));
-    // write_byte(channel_obj->i2c_port_num, (uint8_t)(trigger));
-
-    // write_n_bytes(channel_obj->i2c_port_num, &trigger, 2);
-
+    
     // Wait for measurement to complete
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(50));
 
     // Read value & store
     uint8_t raw_msb = read_register(channel_obj->i2c_port_num, channel_obj->msb_address);
@@ -173,12 +135,12 @@ esp_err_t update_measurement(fdc_channel_t channel_obj)
     channel_obj->raw_msb = raw_msb;
     channel_obj->raw_lsb = raw_lsb;
 
-    // int16_t measurement_value = ((int16_t)msb << 8) | (int16_t)lsb;
+    int16_t measurement_value = ((int16_t)raw_msb << 8) | (int16_t)raw_lsb;
 
     // Calculate capacitance
-    int32_t capacitance = ((int32_t)457) * ((int32_t)raw_msb); // in attofarads
-    capacitance /= 1000;                                       // in femtofarads
-    capacitance += ((int32_t)3028) * ((int32_t)(channel_obj->capdac));
+    int32_t capacitance = (int32_t)ATTOFARADS_UPPER_WORD * (int32_t)measurement_value; // in attofarads
+    capacitance /= 1000; // in femtofarads
+    capacitance += (int32_t)FEMTOFARADS_CAPDAC * (int32_t)(channel_obj->capdac);
 
     // Update capdac
     update_capdac(channel_obj);
