@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-import math
 
 currentDirPath = os.getcwd()
 parentDirPath = parent_directory = os.path.join(currentDirPath, '..')
@@ -25,16 +24,14 @@ def map_range(value, from_min, from_max, to_min, to_max):
     return mapped_value
 
 
-
-file_paths = [os.path.join(logDirPath, file) for file in files if os.path.isfile(os.path.join(logDirPath, file))]
-
 # Sort the file paths by modification time in descending order
+file_paths = [os.path.join(logDirPath, file) for file in files if os.path.isfile(os.path.join(logDirPath, file))]
 file_paths.sort(key=lambda x: os.path.getmtime(x), reverse=True)
 
+# Most recent file 
 most_recent_log_file = file_paths[0]
-print(most_recent_log_file)
-
 file = open(most_recent_log_file, "r")
+print(f"Most recent file: {most_recent_log_file}")
 
 r_values = []
 l_values = []

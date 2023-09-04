@@ -1,58 +1,36 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import json
 
-# Example data
-x = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8])
-y_original = np.array([6.8, 
-7.9,
-8.8,
-9.7,
-10.4,
-11.1,
-11.7,
-12.2,
-12.8,
-13.3])
+# 5mm length reference pad
 
-# Apply logarithmic transformation to y-values
-y_linearized = np.log(y_original)
+# Change this stuff
+ref_baseline = 1.81
 
-# Calculate gain and offset for each data point
-gains = np.diff(y_linearized) / np.diff(x)
-# offsets = y_linearized - gains * x
+ref_full = (2.4, 2.55) # 2.4
+lev_baseline = (6.29, 6.38)
 
-# Calculate linearized y-values using gain and offset for each data point
-# y_linearized_predicted = gains * x + offsets
-print(y_linearized)
+file = open("esp_data.json")
+esp_data = json.load(file)
 
-# # Perform linear regression on the transformed data
-# slope, intercept = np.polyfit(x, y_linearized, 1)
+level_values = []
+for key, value in esp_data:
+    
 
-# # Calculate the linearized y-values using the linear regression equation
-# y_linearized_predicted = slope * x + intercept
+level_values = [(6.29, 6.38), (6.6, 6.62), (7.30, 7.32), (7.89, 7.91), (8.48, 8.49), (8.94, 8.95), (9.64, 9.66), (10.13, 10.14), (10.70, 10.71), (11.17, 11.18), (11.75, 11.76), (12.45, 12.47), (12.92, 12.93), (13.51, 13.52), (14.10, 14.11), (14.67, 14.68)]
+y = [(level_values[i][0] + level_values[i][1]) / 2 for i in range(len(level_values))]
 
-# Plot the original and linearized data
-plt.figure()
-plt.plot(x, y_original, 'o', label='Original Data')
-# plt.plot(x, y_linearized, 'x', label='Linearized Data')
-plt.xlabel('x')
-plt.ylabel('y')
+x = [(i * 5 + 5) for i in range(16)]
 
-gradients_original = np.diff(y_linearized) / np.diff(x)
-print(gradients_original)
+plt.plot(x, y)
 
-desired_gradient = 1
-gain = desired_gradient / np.mean(gradients_original)
-offset = np.mean(y_linearized) - np.mean(gradients_original) * np.mean(x)
+ # Trendline
+z = np.polyfit(x, y, 1)
+p = np.poly1d(z)
 
-y_corrected = gain * x + offset
-# print(y_corrected)
-
-# plt.plot(x, y_corrected, 'x', label='Corrected Data')
-plt.axhline(y=desired_gradient * x[0] + offset, color='r', linestyle='-', label='Desired Line')
-plt.title('Linearising & Linear Data Correction')
-plt.legend()
+#add trendline to plot
+plt.plot(x, p(x))
+plt.title("y=%.2fx+%.2f"%(z[0],z[1]))
 plt.show()
 
-print(f"Gain: {gain}")
-print(f"Offset: {offset}")
+file.close()
