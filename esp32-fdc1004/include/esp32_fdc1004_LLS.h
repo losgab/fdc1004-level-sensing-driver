@@ -8,6 +8,7 @@
 */
 
 #include <driver/i2c.h>
+#include <math.h>
 
 #define FDC_SLAVE_ADDRESS 0b1010000
 
@@ -38,6 +39,21 @@ static const uint8_t config[] = {0x08, 0x09, 0x0A, 0x0B};
 static const uint8_t msb_addresses[] = {0x00, 0x02, 0x04, 0x06};
 static const uint8_t lsb_addresses[] = {0x01, 0x03, 0x05, 0x07};
 
+// Calibration Parameters
+#define REF_BASELINE 1.81 // can be replaced with environment later
+#define REF_FULL 2.475 // can be replaced with environment later
+#define CALCULATED_DELTA 0.665
+#define LEV_BASELINE 6.29 // can be replaced with environment later
+
+#define AVERAGE_STEP_DELTA 0.556
+#define TARGET_CALIBRATION_M 0.11
+#define TARGET_CALIBRATION_B 5.63
+
+#define CORRECTION_GAIN (AVERAGE_STEP_DELTA / CALCULATED_DELTA)
+#define CORRECTION_OFFSET 0
+
+#define FORECAST_NUM_INCREMENTS 20
+
 // Measurement Output
 typedef struct fdc1004_channel
 {
@@ -52,8 +68,20 @@ typedef struct fdc1004_channel
     int capdac;
     float value;
 } fdc1004_channel;
-
 typedef fdc1004_channel* fdc_channel_t;
+
+// Level Calculator Struct
+typedef struct level_calculator
+{
+    float level;
+    float calculated_delta;
+    uint8_t levels[FORECAST_NUM_INCREMENTS];
+    float forecast[FORECAST_NUM_INCREMENTS];
+    float linear_corrections[FORECAST_NUM_INCREMENTS];
+    float forecast_m;
+    float forecast_b;
+} level_calculator;
+typedef level_calculator* level_calc_t;
 
 /**
  * @brief Initialises a channel struct for storing all data associated with channel readings
@@ -78,6 +106,8 @@ esp_err_t del_channel(fdc_channel_t channel_obj);
 /**
  * @brief Validates the fields in the channel struct
  * 
+ * @param channel_obj Pointer to channel struct
+ *
  * @return ESP_OK if good, ESP_ERR_INVLD_ARG if there is mismatch data
 */
 esp_err_t validate_channel_obj(fdc_channel_t channel_obj);
@@ -118,3 +148,33 @@ esp_err_t update_measurement(fdc_channel_t channel_obj);
  * @return ESP_OK if good, ESP_ERR_INVLD_ARG if there is mismatch data
 */
 esp_err_t update_capdac(fdc_channel_t channel_obj);
+
+/**
+ * @brief Initialises a level calculator struct for storing all computation data related to levels
+ * 
+ * @param void
+ * 
+ * @return level_calc_t
+*/
+level_calc_t init_level_calculator();
+
+/**
+ * @brief Calculates the current predicted level through linear correction
+ * 
+ * @param level level_t struct pointer
+ * @param ref_value Current reference pad value
+ * @param lev_value Current level pad value
+ * @param env_value Current environment pad value
+ * 
+ * @return ESP_OK if good, ESP_ERR_INVLD_ARG if calculation failed
+*/
+esp_err_t calculate_level(level_calc_t level, float ref_value, float lev_value, float env_value);
+
+/**
+ * @brief Rounds a float to 2 decimal places
+ * 
+ * @param value Value be rounded
+ * 
+ * @return float
+*/
+float round_2dp(float value);

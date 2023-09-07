@@ -125,7 +125,7 @@ esp_err_t update_measurement(fdc_channel_t channel_obj)
     error = i2c_master_write_to_device(channel_obj->i2c_port_num, FDC_SLAVE_ADDRESS, trigger, sizeof(trigger), pdMS_TO_TICKS(10));
     if (error != ESP_OK)
         printf("Trigger failed! %d\n", error);
-    
+
     // Wait for measurement to complete
     vTaskDelay(pdMS_TO_TICKS(50));
 
@@ -139,7 +139,7 @@ esp_err_t update_measurement(fdc_channel_t channel_obj)
 
     // Calculate capacitance
     int32_t capacitance = (int32_t)ATTOFARADS_UPPER_WORD * (int32_t)measurement_value; // in attofarads
-    capacitance /= 1000; // in femtofarads
+    capacitance /= 1000;                                                               // in femtofarads
     capacitance += (int32_t)FEMTOFARADS_CAPDAC * (int32_t)(channel_obj->capdac);
 
     // Update capdac
@@ -162,4 +162,62 @@ esp_err_t update_capdac(fdc_channel_t channel_obj)
             channel_obj->capdac--;
     }
     return ESP_OK;
+}
+
+level_calc_t init_level_calculator()
+{
+    level_calc_t new_calc = malloc(sizeof(level_calculator));
+    new_calc->level = 0;
+    // level->calculated_delta = REF_FULL - REF_BASELINE;
+    new_calc->calculated_delta = CALCULATED_DELTA;
+
+    // Calculate forecasts based on calcualted delta and level baseline
+    float forecast_val = 0;
+    for (uint8_t i = 0; i < (FORECAST_NUM_INCREMENTS); i++)
+    {
+        forecast_val = LEV_BASELINE + i * new_calc->calculated_delta;
+        forecast_val = round_2dp(forecast_val);
+        new_calc->forecast[i] = forecast_val;
+        new_calc->levels[i] = i * 5 + 5;
+    }
+
+    // Calculate Means & Slope
+    float x_sum, y_sum, xy_sum, xx_sum, x_mean, y_mean = 0;
+    for (uint8_t i = 0; i < FORECAST_NUM_INCREMENTS; i++)
+    {
+        x_sum += new_calc->levels[i];
+        y_sum += new_calc->forecast[i];
+        xy_sum += new_calc->levels[i] * new_calc->forecast[i];
+        xx_sum += new_calc->levels[i] * new_calc->levels[i];
+    }
+    x_mean = x_sum / FORECAST_NUM_INCREMENTS;
+    y_mean = y_sum / FORECAST_NUM_INCREMENTS;
+
+    // Calculate Slope & Intercept
+    float numerator, denominator = 0;
+    for (uint8_t i = 0; i < FORECAST_NUM_INCREMENTS; i++)
+    {
+        numerator += (new_calc->levels[i] - x_mean) * (new_calc->forecast[i] - y_mean);
+        denominator += (new_calc->levels[i] - x_mean) * (new_calc->levels[i] - x_mean);
+    }
+    new_calc->forecast_m = round_2dp((FORECAST_NUM_INCREMENTS * xy_sum - x_sum * y_sum) / (FORECAST_NUM_INCREMENTS * xx_sum - x_sum * x_sum));
+    new_calc->forecast_b = round_2dp(y_mean - new_calc->forecast_m * x_mean);
+
+    // Calculate linear corrections
+    for (uint8_t i = 0; i < FORECAST_NUM_INCREMENTS; i++)
+    {
+        new_calc->linear_corrections[i] = (new_calc->forecast_m * CORRECTION_GAIN) * new_calc->forecast[i] + (new_calc->forecast_b + CORRECTION_OFFSET);
+    }
+}
+
+esp_err_t calculate_level(level_calc_t level, float ref_value, float lev_value, float env_value)
+{
+    // Calculate level delta
+
+    // Calculate forecast based on calculated delta and level baseline
+}
+
+float round_2dp(float value)
+{
+    return (float)((int)(value * 100 + .5) / 100);
 }

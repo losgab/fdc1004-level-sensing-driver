@@ -23,29 +23,36 @@ void app_main()
 
     moving_average_t ref_ma = init_moving_average();
     moving_average_t lev_ma = init_moving_average();
+    moving_average_t env_ma = init_moving_average();
 
     fdc_channel_t ref_channel = init_channel(I2C_MASTER_NUM, REF_CHANNEL, FDC1004_100HZ);
     fdc_channel_t lev_channel = init_channel(I2C_MASTER_NUM, LEV_CHANNEL, FDC1004_100HZ);
+    fdc_channel_t env_channel = init_channel(I2C_MASTER_NUM, ENV_CHANNEL, FDC1004_100HZ);
     
     configure_single_measurement(ref_channel);
     configure_single_measurement(lev_channel);
+    configure_single_measurement(env_channel);
 
     while (1)
     {
         // Update readings from the sensor
         update_measurement(ref_channel);
         update_measurement(lev_channel);
+        update_measurement(env_channel);
 
         // Update moving average
         moving_average_enqueue(ref_ma, ref_channel->value * 1000);
         moving_average_enqueue(lev_ma, lev_channel->value * 1000);
+        moving_average_enqueue(env_ma, env_channel->value * 1000);
 
         // Get moving average
         float ref_result = get_moving_average(ref_ma);
         float lev_result = get_moving_average(lev_ma);
+        float env_result = get_moving_average(env_ma);
 
         printf("Ref Value: %.2f\n", ref_result / 1000);
         printf("Lev Value: %.2f\n", lev_result / 1000);
+        printf("Env Value: %.2f\n", env_result / 1000);
         printf("---------------------------------\n");
 
         SYS_DELAY(100);

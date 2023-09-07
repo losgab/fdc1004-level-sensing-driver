@@ -8,6 +8,8 @@
         "string_view": "c",
         "random": "cpp",
         "esp32_fdc1004_lls.h": "c",
-        "task.h": "c"
+        "task.h": "c",
+        "*.tcc": "c",
+        "math.h": "c"
     }
 }

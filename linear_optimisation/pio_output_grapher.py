@@ -102,9 +102,3 @@ ax2.legend()  # Show legend
 # plt.show()  # Show the plot
 
 # Back Calculation Test
-x = 8.7
-m = 17.574
-b = -135.149
-y = m * x + b
-print(f"y({x}) = {y}")
-print(f"Level: {(round(y / 5) * 5)}")
