@@ -4,7 +4,7 @@
     
     Author: Gabriel Thien
     
-    Based on code written by Ashwin Whitchurch (Protocentral) for Arduino framework
+    Inspired by Arduino driver written by Ashwin Whitchurch (Protocentral)
 */
 
 #include <driver/i2c.h>
@@ -57,12 +57,15 @@ static const uint8_t lsb_addresses[] = {0x01, 0x03, 0x05, 0x07};
 // Measurement Output
 typedef struct fdc1004_channel
 {
+    // Shouldn't be changed
     i2c_port_t i2c_port_num;
     uint8_t channel;
     uint8_t rate;
     uint8_t config_address;
     uint8_t msb_address;
     uint8_t lsb_address;
+
+    // Continuously changed
     int raw_msb;
     int raw_lsb;
     int capdac;
@@ -73,13 +76,16 @@ typedef fdc1004_channel* fdc_channel_t;
 // Level Calculator Struct
 typedef struct level_calculator
 {
-    float level;
+    // Initialised at calculator init, can be updated later on but unsure about performance hit
     float calculated_delta;
     uint8_t levels[FORECAST_NUM_INCREMENTS];
     float forecast[FORECAST_NUM_INCREMENTS];
     float linear_corrections[FORECAST_NUM_INCREMENTS];
     float forecast_m;
     float forecast_b;
+
+    // Constantly being changed
+    float level;
 } level_calculator;
 typedef level_calculator* level_calc_t;
 
@@ -154,7 +160,7 @@ esp_err_t update_capdac(fdc_channel_t channel_obj);
  * 
  * @param void
  * 
- * @return level_calc_t
+ * @return Pointer to level_calc_t struct, NULL if failed
 */
 level_calc_t init_level_calculator();
 
@@ -166,9 +172,9 @@ level_calc_t init_level_calculator();
  * @param lev_value Current level pad value
  * @param env_value Current environment pad value
  * 
- * @return ESP_OK if good, ESP_ERR_INVLD_ARG if calculation failed
+ * @return unsigned integer
 */
-esp_err_t calculate_level(level_calc_t level, float ref_value, float lev_value, float env_value);
+uint8_t calculate_level(level_calc_t level, float ref_value, float lev_value, float env_value);
 
 /**
  * @brief Rounds a float to 2 decimal places
@@ -178,3 +184,12 @@ esp_err_t calculate_level(level_calc_t level, float ref_value, float lev_value, 
  * @return float
 */
 float round_2dp(float value);
+
+/**
+ * @brief Rounds to the nearest multiple of 5
+ * 
+ * @param value Value to be rounded
+ * 
+ * @return unsigned integer
+*/
+uint8_t round_nearest_5(float value);

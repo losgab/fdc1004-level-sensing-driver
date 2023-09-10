@@ -182,7 +182,7 @@ level_calc_t init_level_calculator()
     }
 
     // Calculate Means & Slope
-    float x_sum, y_sum, xy_sum, xx_sum, x_mean, y_mean = 0;
+    float x_sum = 0, y_sum = 0, xy_sum = 0, xx_sum = 0;
     for (uint8_t i = 0; i < FORECAST_NUM_INCREMENTS; i++)
     {
         x_sum += new_calc->levels[i];
@@ -190,34 +190,38 @@ level_calc_t init_level_calculator()
         xy_sum += new_calc->levels[i] * new_calc->forecast[i];
         xx_sum += new_calc->levels[i] * new_calc->levels[i];
     }
-    x_mean = x_sum / FORECAST_NUM_INCREMENTS;
-    y_mean = y_sum / FORECAST_NUM_INCREMENTS;
 
     // Calculate Slope & Intercept
-    float numerator, denominator = 0;
-    for (uint8_t i = 0; i < FORECAST_NUM_INCREMENTS; i++)
-    {
-        numerator += (new_calc->levels[i] - x_mean) * (new_calc->forecast[i] - y_mean);
-        denominator += (new_calc->levels[i] - x_mean) * (new_calc->levels[i] - x_mean);
-    }
-    new_calc->forecast_m = round_2dp((FORECAST_NUM_INCREMENTS * xy_sum - x_sum * y_sum) / (FORECAST_NUM_INCREMENTS * xx_sum - x_sum * x_sum));
-    new_calc->forecast_b = round_2dp(y_mean - new_calc->forecast_m * x_mean);
+    new_calc->forecast_m = round_2dp(FORECAST_NUM_INCREMENTS * xy_sum - x_sum * y_sum) / (FORECAST_NUM_INCREMENTS * xx_sum - x_sum * x_sum);
+    new_calc->forecast_b = round_2dp((y_sum -  new_calc->forecast_m * x_sum) / FORECAST_NUM_INCREMENTS);
 
     // Calculate linear corrections
     for (uint8_t i = 0; i < FORECAST_NUM_INCREMENTS; i++)
     {
         new_calc->linear_corrections[i] = (new_calc->forecast_m * CORRECTION_GAIN) * new_calc->forecast[i] + (new_calc->forecast_b + CORRECTION_OFFSET);
     }
+
+    return new_calc;
 }
 
-esp_err_t calculate_level(level_calc_t level, float ref_value, float lev_value, float env_value)
+uint8_t calculate_level(level_calc_t level, float ref_value, float lev_value, float env_value)
 {
-    // Calculate level delta
+    // Apply linear correction
+    float linear_corrected = (new_calc->forecast_m * CORRECTION_GAIN) * new_calc->forecast[i] + (new_calc->forecast_b + CORRECTION_OFFSET);
 
-    // Calculate forecast based on calculated delta and level baseline
+    // Calculate level delta
+    float raw_prediction = (lev_value - TARGET_CALIBRATION_B) / (TARGET_CALIBRATION_M);
+    uint8_t level_prediction = round_nearest_5(raw_prediction);
+
+    return level_prediction;
 }
 
 float round_2dp(float value)
 {
     return (float)((int)(value * 100 + .5) / 100);
+}
+
+uint8_t round_nearest_5(float value)
+{
+    return (int)((value / 5) * 5);
 }
