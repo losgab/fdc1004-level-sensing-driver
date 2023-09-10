@@ -207,13 +207,13 @@ level_calc_t init_level_calculator()
 uint8_t calculate_level(level_calc_t level, float ref_value, float lev_value, float env_value)
 {
     // Apply linear correction
-    float linear_corrected = (new_calc->forecast_m * CORRECTION_GAIN) * new_calc->forecast[i] + (new_calc->forecast_b + CORRECTION_OFFSET);
+    float linear_corrected = (level->forecast_m * CORRECTION_GAIN) * lev_value + (level->forecast_b + CORRECTION_OFFSET);
 
     // Calculate level delta
-    float raw_prediction = (lev_value - TARGET_CALIBRATION_B) / (TARGET_CALIBRATION_M);
-    uint8_t level_prediction = round_nearest_5(raw_prediction);
+    float raw_prediction = (linear_corrected - TARGET_CALIBRATION_B) / (TARGET_CALIBRATION_M);
 
-    return level_prediction;
+    if (lev_value < LEV_BASELINE) return 0;
+    else return (uint8_t)(round_nearest_5(raw_prediction));
 }
 
 float round_2dp(float value)

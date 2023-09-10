@@ -28,7 +28,9 @@ void app_main()
     fdc_channel_t ref_channel = init_channel(I2C_MASTER_NUM, REF_CHANNEL, FDC1004_100HZ);
     fdc_channel_t lev_channel = init_channel(I2C_MASTER_NUM, LEV_CHANNEL, FDC1004_100HZ);
     fdc_channel_t env_channel = init_channel(I2C_MASTER_NUM, ENV_CHANNEL, FDC1004_100HZ);
-    
+
+    level_calc_t level_calc = init_level_calculator();
+
     configure_single_measurement(ref_channel);
     configure_single_measurement(lev_channel);
     configure_single_measurement(env_channel);
@@ -50,9 +52,13 @@ void app_main()
         float lev_result = get_moving_average(lev_ma);
         float env_result = get_moving_average(env_ma);
 
+        // Get level
+        uint8_t level = calculate_level(level_calc, ref_result, lev_result, env_result);
+
         printf("Ref Value: %.2f\n", ref_result / 1000);
         printf("Lev Value: %.2f\n", lev_result / 1000);
         printf("Env Value: %.2f\n", env_result / 1000);
+        printf("Level:     %d\n", level);
         printf("---------------------------------\n");
 
         SYS_DELAY(100);
