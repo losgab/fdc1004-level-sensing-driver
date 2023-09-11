@@ -48,16 +48,16 @@ void app_main()
         moving_average_enqueue(env_ma, env_channel->value * 1000);
 
         // Get moving average
-        float ref_result = get_moving_average(ref_ma);
-        float lev_result = get_moving_average(lev_ma);
-        float env_result = get_moving_average(env_ma);
+        float ref_result = get_moving_average(ref_ma) / 1000;
+        float lev_result = get_moving_average(lev_ma) / 1000;
+        float env_result = get_moving_average(env_ma) / 1000;
 
         // Get level
         uint8_t level = calculate_level(level_calc, ref_result, lev_result, env_result);
 
-        printf("Ref Value: %.2f\n", ref_result / 1000);
-        printf("Lev Value: %.2f\n", lev_result / 1000);
-        printf("Env Value: %.2f\n", env_result / 1000);
+        printf("Ref Value: %.2f\n", ref_result);
+        printf("Lev Value: %.2f\n", lev_result);
+        printf("Env Value: %.2f\n", env_result);
         printf("Level:     %d\n", level);
         printf("---------------------------------\n");
 

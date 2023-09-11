@@ -40,19 +40,14 @@ static const uint8_t msb_addresses[] = {0x00, 0x02, 0x04, 0x06};
 static const uint8_t lsb_addresses[] = {0x01, 0x03, 0x05, 0x07};
 
 // Calibration Parameters
-#define REF_BASELINE 1.81 // can be replaced with environment later
-#define REF_FULL 2.475 // can be replaced with environment later
-#define CALCULATED_DELTA 0.665
-#define LEV_BASELINE 6.29 // can be replaced with environment later
-
-#define AVERAGE_STEP_DELTA 0.556
-#define TARGET_CALIBRATION_M 0.11
-#define TARGET_CALIBRATION_B 5.63
-
-#define CORRECTION_GAIN (AVERAGE_STEP_DELTA / CALCULATED_DELTA)
-#define CORRECTION_OFFSET 0
+#define REF_BASELINE 1.80 // can be replaced with environment later
+#define REF_FULL 2.4 // can be replaced with environment later
+#define LEV_BASELINE 6.28 // can be replaced with environment later
 
 #define FORECAST_NUM_INCREMENTS 20
+
+#define CORRECTION_MULTIPLIER 1
+#define CORRECTION_OFFSET 0
 
 // Measurement Output
 typedef struct fdc1004_channel
@@ -80,12 +75,12 @@ typedef struct level_calculator
     float calculated_delta;
     uint8_t levels[FORECAST_NUM_INCREMENTS];
     float forecast[FORECAST_NUM_INCREMENTS];
-    float linear_corrections[FORECAST_NUM_INCREMENTS];
     float forecast_m;
     float forecast_b;
 
-    // Constantly being changed
-    float level;
+    // Corrections
+    float correction_gain;
+    float correction_offset;
 } level_calculator;
 typedef level_calculator* level_calc_t;
 

@@ -167,16 +167,13 @@ esp_err_t update_capdac(fdc_channel_t channel_obj)
 level_calc_t init_level_calculator()
 {
     level_calc_t new_calc = malloc(sizeof(level_calculator));
-    new_calc->level = 0;
-    // level->calculated_delta = REF_FULL - REF_BASELINE;
-    new_calc->calculated_delta = CALCULATED_DELTA;
+    new_calc->calculated_delta = REF_FULL - REF_BASELINE;
 
     // Calculate forecasts based on calcualted delta and level baseline
     float forecast_val = 0;
     for (uint8_t i = 0; i < (FORECAST_NUM_INCREMENTS); i++)
     {
-        forecast_val = LEV_BASELINE + i * new_calc->calculated_delta;
-        forecast_val = round_2dp(forecast_val);
+        forecast_val = round_2dp(LEV_BASELINE + i * new_calc->calculated_delta);
         new_calc->forecast[i] = forecast_val;
         new_calc->levels[i] = i * 5 + 5;
     }
@@ -193,27 +190,27 @@ level_calc_t init_level_calculator()
 
     // Calculate Slope & Intercept
     new_calc->forecast_m = round_2dp(FORECAST_NUM_INCREMENTS * xy_sum - x_sum * y_sum) / (FORECAST_NUM_INCREMENTS * xx_sum - x_sum * x_sum);
-    new_calc->forecast_b = round_2dp((y_sum -  new_calc->forecast_m * x_sum) / FORECAST_NUM_INCREMENTS);
+    new_calc->forecast_b = round_2dp((y_sum - new_calc->forecast_m * x_sum) / FORECAST_NUM_INCREMENTS);
+    printf("forecast_m: %f\n", new_calc->forecast_m);
+    printf("forecast_b: %f\n", new_calc->forecast_b);
 
-    // Calculate linear corrections
-    for (uint8_t i = 0; i < FORECAST_NUM_INCREMENTS; i++)
-    {
-        new_calc->linear_corrections[i] = (new_calc->forecast_m * CORRECTION_GAIN) * new_calc->forecast[i] + (new_calc->forecast_b + CORRECTION_OFFSET);
-    }
+    new_calc->correction_gain = 1 / new_calc->forecast_m;
+    new_calc->correction_offset = -1 * new_calc->correction_gain * new_calc->forecast_b;
+    printf("Correction Gain: %f\n", new_calc->correction_gain);
+    printf("Correction Offset: %f\n", new_calc->correction_offset);
 
     return new_calc;
 }
 
 uint8_t calculate_level(level_calc_t level, float ref_value, float lev_value, float env_value)
 {
+    if (lev_value < LEV_BASELINE)
+        return 0;
+
     // Apply linear correction
-    float linear_corrected = (level->forecast_m * CORRECTION_GAIN) * lev_value + (level->forecast_b + CORRECTION_OFFSET);
-
-    // Calculate level delta
-    float raw_prediction = (linear_corrected - TARGET_CALIBRATION_B) / (TARGET_CALIBRATION_M);
-
-    if (lev_value < LEV_BASELINE) return 0;
-    else return (uint8_t)(round_nearest_5(raw_prediction));
+    float linear_corrected = lev_value * CORRECTION_MULTIPLIER * level->correction_gain + (CORRECTION_OFFSET + level->correction_offset);
+    printf("Linear Corrected: %f\n", linear_corrected);
+    return round_nearest_5(linear_corrected);
 }
 
 float round_2dp(float value)
@@ -223,5 +220,5 @@ float round_2dp(float value)
 
 uint8_t round_nearest_5(float value)
 {
-    return (int)((value / 5) * 5);
+    return (int)((value + (5 / 2)) / 5) * 5;
 }
