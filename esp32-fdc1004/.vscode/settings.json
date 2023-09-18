@@ -10,6 +10,7 @@
         "esp32_fdc1004_lls.h": "c",
         "task.h": "c",
         "*.tcc": "c",
-        "math.h": "c"
+        "math.h": "c",
+        "timer.h": "c"
     }
 }

@@ -46,8 +46,11 @@ static const uint8_t lsb_addresses[] = {0x01, 0x03, 0x05, 0x07};
 
 #define FORECAST_NUM_INCREMENTS 20
 
-#define CORRECTION_MULTIPLIER 1
+// Increase if undershooting, Decrease if overshooting
+#define CORRECTION_MULTIPLIER 1.04
 #define CORRECTION_OFFSET 0
+
+#define CALIBRATION_FREQ 5000
 
 // Measurement Output
 typedef struct fdc1004_channel
@@ -71,16 +74,16 @@ typedef fdc1004_channel* fdc_channel_t;
 // Level Calculator Struct
 typedef struct level_calculator
 {
-    // Initialised at calculator init, can be updated later on but unsure about performance hit
-    float calculated_delta;
-    uint8_t levels[FORECAST_NUM_INCREMENTS];
-    float forecast[FORECAST_NUM_INCREMENTS];
-    float forecast_m;
-    float forecast_b;
+    float current_delta; // Current delta that the sensor is calibrated for
 
-    // Corrections
+    // Correction Values (calculated and used in level predictions)
     float correction_gain;
     float correction_offset;
+
+    // Raw Result Values (Constantly updated)
+    float ref_value;
+    float lev_value;
+    float env_value;
 } level_calculator;
 typedef level_calculator* level_calc_t;
 
@@ -160,16 +163,22 @@ esp_err_t update_capdac(fdc_channel_t channel_obj);
 level_calc_t init_level_calculator();
 
 /**
+ * @brief Force calibrates the level calculator linear correction
+ * 
+ * @param level level_t struct pointer
+ * 
+ * @return ESP_OK if good, ESP_ERR_INVLD_ARG if there is mismatch data
+*/
+esp_err_t calibrate(level_calc_t level);
+
+/**
  * @brief Calculates the current predicted level through linear correction
  * 
  * @param level level_t struct pointer
- * @param ref_value Current reference pad value
- * @param lev_value Current level pad value
- * @param env_value Current environment pad value
  * 
  * @return unsigned integer
 */
-uint8_t calculate_level(level_calc_t level, float ref_value, float lev_value, float env_value);
+uint8_t calculate_level(level_calc_t level);
 
 /**
  * @brief Rounds a float to 2 decimal places
