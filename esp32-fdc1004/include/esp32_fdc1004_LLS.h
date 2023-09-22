@@ -10,6 +10,8 @@
 #include <driver/i2c.h>
 #include <math.h>
 
+#include "MovingAverage.h"
+
 #define FDC_SLAVE_ADDRESS 0b1010000
 
 #define FDC1004_100HZ (0x01)
@@ -47,7 +49,7 @@ static const uint8_t lsb_addresses[] = {0x01, 0x03, 0x05, 0x07};
 #define FORECAST_NUM_INCREMENTS 20
 
 // Increase if undershooting, Decrease if overshooting
-#define CORRECTION_MULTIPLIER 1.04
+#define CORRECTION_MULTIPLIER 1.03
 #define CORRECTION_OFFSET 0
 
 #define CALIBRATION_FREQ 5000
@@ -63,10 +65,14 @@ typedef struct fdc1004_channel
     uint8_t msb_address;
     uint8_t lsb_address;
 
+    // Utility
+    moving_average_t ma;
+
     // Continuously changed
     int raw_msb;
     int raw_lsb;
     int capdac;
+    float raw_value;
     float value;
 } fdc1004_channel;
 typedef fdc1004_channel* fdc_channel_t;
@@ -193,7 +199,8 @@ float round_2dp(float value);
  * @brief Rounds to the nearest multiple of 5
  * 
  * @param value Value to be rounded
+ * @param multiple Multiple to which to be rounded
  * 
  * @return unsigned integer
 */
-uint8_t round_nearest_5(float value);
+uint8_t round_nearest_multiple(float value, uint8_t multiple);

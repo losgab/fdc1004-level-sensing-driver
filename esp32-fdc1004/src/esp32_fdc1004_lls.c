@@ -25,9 +25,13 @@ fdc_channel_t init_channel(i2c_port_t i2c_port_num, uint8_t channel, uint8_t rat
     new_channel->config_address = config[channel];
     new_channel->msb_address = msb_addresses[channel];
     new_channel->lsb_address = lsb_addresses[channel];
+
+    new_channel->ma = init_moving_average();
+
     new_channel->raw_msb = 0;
     new_channel->raw_lsb = 0;
     new_channel->capdac = 0;
+    new_channel->raw_value = 0;
     new_channel->value = 0;
     return new_channel;
 }
@@ -145,7 +149,15 @@ esp_err_t update_measurement(fdc_channel_t channel_obj)
     // Update capdac
     update_capdac(channel_obj);
 
-    channel_obj->value = ((float)capacitance / 1000);
+    // Store value
+    channel_obj->raw_value = ((float)capacitance / 1000);
+
+    // Update moving average
+    moving_average_enqueue(channel_obj->ma, (float)capacitance);
+
+    // Update value
+    channel_obj->value = get_moving_average(channel_obj->ma) / 1000;
+
     return ESP_OK;
 }
 
@@ -176,7 +188,8 @@ level_calc_t init_level_calculator()
 
 esp_err_t calibrate(level_calc_t level)
 {
-    level->current_delta = level->ref_value - level->env_value;
+    // level->current_delta = level->ref_value - level->env_value;
+    level->current_delta = level->ref_value - REF_BASELINE;
     if (level->current_delta == 0)
     {
         printf("Calibration Failed!\n");
@@ -210,6 +223,9 @@ esp_err_t calibrate(level_calc_t level)
 
 uint8_t calculate_level(level_calc_t level)
 {
+    if (level->ref_value < REF_BASELINE - 0.2)
+        esp_restart();
+
     if (level->lev_value < LEV_BASELINE)
         return 0;
 
@@ -218,7 +234,7 @@ uint8_t calculate_level(level_calc_t level)
     
     printf("Linear Corrected: %f\n", linear_corrected);
     
-    return round_nearest_5(linear_corrected);
+    return round_nearest_multiple(linear_corrected, 5);
 }
 
 float round_2dp(float value)
@@ -226,7 +242,7 @@ float round_2dp(float value)
     return (float)((int)(value * 100 + .5) / 100);
 }
 
-uint8_t round_nearest_5(float value)
+uint8_t round_nearest_multiple(float value, uint8_t multiple)
 {
-    return (int)((value + (5 / 2)) / 5) * 5;
+    return (int)((value + (multiple / 2)) / multiple) * multiple;
 }
