@@ -1,5 +1,21 @@
 #include "esp32_fdc1004_lls.h"
 
+esp_err_t fdc_reset(void)
+{
+    uint8_t reset[3];
+    reset[0] = FDC_REGISTER;
+    reset[1] = 1 << 7;
+    reset[2] = 0;
+
+    uint8_t error = i2c_master_write_to_device(0, FDC_SLAVE_ADDRESS, reset, sizeof(reset), pdMS_TO_TICKS(1000));
+    if (error != ESP_OK)
+    {
+        printf("Software Reset Failed! %d\n", error);
+        return error;
+    }
+    return ESP_OK;
+}
+
 fdc_channel_t init_channel(i2c_port_t i2c_port_num, uint8_t channel, uint8_t rate)
 {
     if (!FDC1004_IS_CHANNEL(channel))
@@ -224,7 +240,7 @@ esp_err_t calibrate(level_calc_t level)
 uint8_t calculate_level(level_calc_t level)
 {
     if (level->ref_value < REF_BASELINE - 0.2)
-        esp_restart();
+        fdc_reset();
 
     if (level->lev_value < LEV_BASELINE)
         return 0;

@@ -94,6 +94,13 @@ typedef struct level_calculator
 typedef level_calculator* level_calc_t;
 
 /**
+ * @brief Software reset the FDC1004
+ * 
+ * @return ESP_OK
+*/
+esp_err_t fdc_reset(void);
+
+/**
  * @brief Initialises a channel struct for storing all data associated with channel readings
  * 
  * @param i2c_port_num I2C port number to initialise the channel on
