@@ -8,7 +8,7 @@
 */
 
 #include <driver/i2c.h>
-#include <math.h>
+#include "freertos/timers.h"
 
 #include "MovingAverage.h"
 
@@ -44,7 +44,7 @@ static const uint8_t lsb_addresses[] = {0x01, 0x03, 0x05, 0x07};
 // Calibration Parameters
 #define REF_BASELINE 1.80 // can be replaced with environment later
 #define REF_FULL 2.4 // can be replaced with environment later
-#define LEV_BASELINE 6.28 // can be replaced with environment later
+#define LEV_BASELINE 6.28
 
 #define FORECAST_NUM_INCREMENTS 20
 
@@ -52,7 +52,7 @@ static const uint8_t lsb_addresses[] = {0x01, 0x03, 0x05, 0x07};
 #define CORRECTION_MULTIPLIER 1.03
 #define CORRECTION_OFFSET 0
 
-#define CALIBRATION_FREQ 5000
+#define CALIBRATION_FREQ 5000 // frequency of self calibration (ms)
 
 // Measurement Output
 typedef struct fdc1004_channel
@@ -174,6 +174,15 @@ esp_err_t update_capdac(fdc_channel_t channel_obj);
  * @return Pointer to level_calc_t struct, NULL if failed
 */
 level_calc_t init_level_calculator();
+
+/**
+ * @brief Handles the function call back for the timer interrupt
+ * 
+ * @param xTimer The parameter to be passed to the callback function
+ * 
+ * @return void
+*/
+void timer_callback(TimerHandle_t xTimer);
 
 /**
  * @brief Force calibrates the level calculator linear correction

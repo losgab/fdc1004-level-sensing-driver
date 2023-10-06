@@ -199,7 +199,23 @@ level_calc_t init_level_calculator()
     // Initial calibration
     calibrate(new_calc);
 
+    TimerHandle_t timer = xTimerCreate("MyTimer",                     // Timer name
+                                       pdMS_TO_TICKS(CALIBRATION_FREQ), // Timer period in milliseconds (e.g., 1000 ms for 1 second)
+                                       pdTRUE,                        // Auto-reload the timer
+                                       (void *)new_calc,            // Timer parameters
+                                       timer_callback);               // Timer callback function
+
+    xTimerStart(timer, 0);
+
     return new_calc;
+}
+
+void timer_callback(TimerHandle_t xTimer) {
+    level_calc_t level_calc = (level_calc_t)pvTimerGetTimerID(xTimer);
+
+    calibrate(level_calc);
+
+    // printf("Interrupt! Calibration triggered!\n");
 }
 
 esp_err_t calibrate(level_calc_t level)
@@ -247,9 +263,9 @@ uint8_t calculate_level(level_calc_t level)
 
     // Apply linear correction
     float linear_corrected = level->lev_value * CORRECTION_MULTIPLIER * level->correction_gain + (CORRECTION_OFFSET + level->correction_offset);
-    
+
     printf("Linear Corrected: %f\n", linear_corrected);
-    
+
     return round_nearest_multiple(linear_corrected, 5);
 }
 

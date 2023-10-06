@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "freertos/timers.h"
 
 // Custom Convenience Libraries
 #include "esp32_fdc1004_LLS.h"
@@ -38,17 +37,11 @@ void app_main()
 
     button_t button = create_button(GPIO_NUM_25, true);
 
-    TimerHandle_t timer = xTimerCreate("MyTimer",                       // Timer name
-                                       pdMS_TO_TICKS(TIMER_INTERVAL),   // Timer period in milliseconds (e.g., 1000 ms for 1 second)
-                                       pdTRUE,                          // Auto-reload the timer
-                                       (void *)level_calc,              // Timer parameters
-                                       timer_callback);                 // Timer callback function
 
     configure_single_measurement(ref_channel);
     configure_single_measurement(lev_channel);
     configure_single_measurement(env_channel);
 
-    xTimerStart(timer, 0);
 
     while (1)
     {
@@ -84,13 +77,5 @@ void app_main()
         SYS_DELAY(500);
     }
 
-    xTimerDelete(timer, 0);
 }
 
-void timer_callback(TimerHandle_t xTimer) {
-    level_calc_t level_calc = (level_calc_t)pvTimerGetTimerID(xTimer);
-
-    calibrate(level_calc);
-
-    printf("Interrupt! Calibration triggered!\n");
-}
