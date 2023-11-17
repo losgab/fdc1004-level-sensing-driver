@@ -49,10 +49,15 @@ static const uint8_t lsb_addresses[] = {0x01, 0x03, 0x05, 0x07};
 #define FORECAST_NUM_INCREMENTS 20
 
 // Increase if undershooting, Decrease if overshooting
-#define CORRECTION_MULTIPLIER 1.03
-#define CORRECTION_OFFSET 0
+#define CORRECTION_MULTIPLIER 1.00
+#define CORRECTION_OFFSET -10
 
 #define CALIBRATION_FREQ 5000 // frequency of self calibration (ms)
+
+#define REF_CHANNEL 0
+#define LEV_CHANNEL 1
+#define ENV_CHANNEL 2
+#define LNV_CHANNEL 3
 
 // Measurement Output
 typedef struct fdc1004_channel
@@ -86,10 +91,17 @@ typedef struct level_calculator
     float correction_gain;
     float correction_offset;
 
-    // Raw Result Values (Constantly updated)
+    // Result Values (Constantly updated)
     float ref_value;
     float lev_value;
     float env_value;
+    float lnv_value;
+
+    // Channel Objects
+    fdc_channel_t ref_channel;
+    fdc_channel_t lev_channel;
+    fdc_channel_t env_channel;
+    fdc_channel_t lnv_channel;
 } level_calculator;
 typedef level_calculator* level_calc_t;
 
@@ -156,6 +168,15 @@ esp_err_t configure_single_measurement(fdc_channel_t channel_obj);
  * @return ESP_OK if good, ESP_ERR_INVLD_ARG if there is mismatch data
 */
 esp_err_t update_measurement(fdc_channel_t channel_obj);
+
+/**
+ * @brief Triggers and updates measurements of the channel struct
+ * 
+ * @param level_calc Pointer to level calculator
+ * 
+ * @return ESP_OK if good, ESP_ERR_INVLD_ARG if there is mismatch data
+*/
+esp_err_t update_measurements(level_calc_t level_calc);
 
 /**
  * @brief Updates the capdac associated to the channel

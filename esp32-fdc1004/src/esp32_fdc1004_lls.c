@@ -144,7 +144,10 @@ esp_err_t update_measurement(fdc_channel_t channel_obj)
     trigger[2] = (uint8_t)(trigger_config);
     error = i2c_master_write_to_device(channel_obj->i2c_port_num, FDC_SLAVE_ADDRESS, trigger, sizeof(trigger), pdMS_TO_TICKS(10));
     if (error != ESP_OK)
+    {
         printf("Trigger failed! %d\n", error);
+        return error;
+    }
 
     // Wait for measurement to complete
     vTaskDelay(pdMS_TO_TICKS(50));
@@ -163,7 +166,7 @@ esp_err_t update_measurement(fdc_channel_t channel_obj)
     capacitance += (int32_t)FEMTOFARADS_CAPDAC * (int32_t)(channel_obj->capdac);
 
     // Update capdac
-    update_capdac(channel_obj);
+    // update_capdac(channel_obj);
 
     // Store value
     channel_obj->raw_value = ((float)capacitance / 1000);
@@ -174,6 +177,21 @@ esp_err_t update_measurement(fdc_channel_t channel_obj)
     // Update value
     channel_obj->value = get_moving_average(channel_obj->ma) / 1000;
 
+    return ESP_OK;
+}
+
+esp_err_t update_measurements(level_calc_t level_calc)
+{
+    // Update all readings on all channels
+    update_measurement(level_calc->ref_channel);
+    update_measurement(level_calc->lev_channel);
+    update_measurement(level_calc->env_channel);
+    // update_measurement(level_calc->lnv_channel);
+
+    level_calc->ref_value = level_calc->ref_channel->value;
+    level_calc->lev_value = level_calc->lev_channel->value;
+    level_calc->env_value = level_calc->env_channel->value;
+    // level_calc->env_value = update_measurement(level_calc->lvl_env_channel);
     return ESP_OK;
 }
 
@@ -199,18 +217,34 @@ level_calc_t init_level_calculator()
     // Initial calibration
     calibrate(new_calc);
 
-    TimerHandle_t timer = xTimerCreate("MyTimer",                     // Timer name
+    TimerHandle_t timer = xTimerCreate("MyTimer",                       // Timer name
                                        pdMS_TO_TICKS(CALIBRATION_FREQ), // Timer period in milliseconds (e.g., 1000 ms for 1 second)
-                                       pdTRUE,                        // Auto-reload the timer
-                                       (void *)new_calc,            // Timer parameters
-                                       timer_callback);               // Timer callback function
+                                       pdTRUE,                          // Auto-reload the timer
+                                       (void *)new_calc,                // Timer parameters
+                                       timer_callback);                 // Timer callback function
 
     xTimerStart(timer, 0);
+
+    new_calc->ref_value = 0;
+    new_calc->lev_value = 0;
+    new_calc->env_value = 0;
+    // new_calc->lnv_value = 0;
+
+    new_calc->ref_channel = init_channel(I2C_NUM_0, REF_CHANNEL, FDC1004_100HZ);
+    new_calc->lev_channel = init_channel(I2C_NUM_0, LEV_CHANNEL, FDC1004_100HZ);
+    new_calc->env_channel = init_channel(I2C_NUM_0, ENV_CHANNEL, FDC1004_100HZ);
+    // new_calc->lnv_channel = init_channel(I2C_NUM_0, LNV_CHANNEL, FDC1004_100HZ);
+
+    configure_single_measurement(new_calc->ref_channel);
+    configure_single_measurement(new_calc->lev_channel);
+    configure_single_measurement(new_calc->env_channel);
+    // configure_single_measurement(new_calc->lnv_channel);
 
     return new_calc;
 }
 
-void timer_callback(TimerHandle_t xTimer) {
+void timer_callback(TimerHandle_t xTimer)
+{
     level_calc_t level_calc = (level_calc_t)pvTimerGetTimerID(xTimer);
 
     calibrate(level_calc);
@@ -220,32 +254,20 @@ void timer_callback(TimerHandle_t xTimer) {
 
 esp_err_t calibrate(level_calc_t level)
 {
-    // level->current_delta = level->ref_value - level->env_value;
-    level->current_delta = level->ref_value - REF_BASELINE;
+    level->current_delta = level->ref_value - level->env_value;
+    // level->current_delta = level->ref_value - REF_BASELINE;
     if (level->current_delta == 0)
     {
         printf("Calibration Failed!\n");
     }
 
-    // Calculate forecasts based on calculated delta and level baseline
-    float forecast_val = 0;
-    uint8_t level_val = 0;
-    float x_sum = 0, y_sum = 0, xy_sum = 0, xx_sum = 0;
-    for (uint8_t i = 0; i < FORECAST_NUM_INCREMENTS; i++)
-    {
-        forecast_val = round_2dp(LEV_BASELINE + i * level->current_delta);
-        level_val = i * 5 + 5;
-
-        x_sum += level_val;
-        y_sum += forecast_val;
-        xy_sum += level_val * forecast_val;
-        xx_sum += level_val * level_val;
-    }
-
-    // Calculate Slope & Intercept
+    // Calculates the predicted trend
     float forecast_m = 0, forecast_b = 0;
-    forecast_m = (FORECAST_NUM_INCREMENTS * xy_sum - x_sum * y_sum) / (FORECAST_NUM_INCREMENTS * xx_sum - x_sum * x_sum);
-    forecast_b = (y_sum - forecast_m * x_sum) / FORECAST_NUM_INCREMENTS;
+    forecast_m = level->current_delta / 5;
+    forecast_b = LEV_BASELINE - forecast_m * 5;
+
+    printf("(2) Forecast m: %.2f\n", forecast_m);
+    printf("(2) Forecast b: %.2f\n", forecast_b);
 
     level->correction_gain = round_2dp(1 / forecast_m);
     level->correction_offset = round_2dp(-1 * level->correction_gain * forecast_b);
@@ -262,7 +284,7 @@ uint8_t calculate_level(level_calc_t level)
         return 0;
 
     // Apply linear correction
-    float linear_corrected = level->lev_value * CORRECTION_MULTIPLIER * level->correction_gain + (CORRECTION_OFFSET + level->correction_offset);
+    float linear_corrected = (level->lev_value * CORRECTION_MULTIPLIER * level->correction_gain) + (CORRECTION_OFFSET + level->correction_offset);
 
     printf("Linear Corrected: %f\n", linear_corrected);
 

@@ -11,7 +11,7 @@
 */
 #include <stdlib.h>
 
-#define WINDOW_SIZE 20 // TO BE REMOVED LATER
+#define WINDOW_SIZE 30 // TO BE REMOVED LATER
 
 typedef struct MovingAverage
 {
